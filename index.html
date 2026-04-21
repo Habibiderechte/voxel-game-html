@@ -1,1 +1,78 @@
-<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>3D Voxel Game</title>\n    <style>\n        body { margin: 0; }\n        canvas { display: block; }\n    </style>\n</head>\n<body>\n    <script src="https://threejs.org/build/three.min.js"></script>\n    <script src="https://threejs.org/examples/js/controls/PointerLockControls.js"></script>\n    <script src="https://threejs.org/examples/js/dat.gui.min.js"></script>\n    <script>\n        let scene, camera, renderer, controls;\n        let inventory = [];\n        let fpsDisplay;\n        let positionDisplay;\n        let clock = new THREE.Clock();\n\n        function init() {\n            scene = new THREE.Scene();\n            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);\n            renderer = new THREE.WebGLRenderer();\n            renderer.setSize(window.innerWidth, window.innerHeight);\n            document.body.appendChild(renderer.domElement);\n\n            controls = new THREE.PointerLockControls(camera, document.body);\n            document.body.appendChild(controls.getElement());\n\n            window.addEventListener('click', () => {\n                controls.lock();\n            });\n            generateTerrain();\n            createHUD();\n            animate();\n        }\n\n        function generateTerrain() {\n            const geometry = new THREE.BoxGeometry(1, 1, 1);\n            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });\n            for (let x = -50; x < 50; x++) {\n                for (let z = -50; z < 50; z++) {\n                    const block = new THREE.Mesh(geometry, material);\n                    block.position.set(x, 0, z);\n                    scene.add(block);\n                }\n            }\n        }\n\n        function createHUD() {\n            fpsDisplay = document.createElement('div');\n            fpsDisplay.style.position = 'absolute';\n            fpsDisplay.style.top = '10px';\n            fpsDisplay.style.left = '10px';\n            fpsDisplay.style.color = 'white';\n            document.body.appendChild(fpsDisplay);\n\n            positionDisplay = document.createElement('div');\n            positionDisplay.style.position = 'absolute';\n            positionDisplay.style.top = '30px';\n            positionDisplay.style.left = '10px';\n            positionDisplay.style.color = 'white';\n            document.body.appendChild(positionDisplay);\n        }\n\n        function animate() {\n            requestAnimationFrame(animate);\n            const delta = clock.getDelta();\n            controls.moveRight(0.1); // Temporary for testing\n            controls.moveForward(0.1); // Temporary for testing\n            fpsDisplay.innerText = 'FPS: ' + Math.round(1 / delta);\n            positionDisplay.innerText = 'Position: ' + camera.position.toArray().join(', ');\n            renderer.render(scene, camera);\n        }\n\n        init();\n    </script>\n</body>\n</html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voxel Game</title>
+    <style>
+        canvas { border: 1px solid black; display: block; margin: auto; }
+        body { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Voxel Game</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div>
+        <span id="fpsCounter"></span>
+        <span id="positionDisplay"></span>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let blocks = {};
+        let position = { x: 0, y: 0, z: 0 };
+        let fps = 0;
+        let lastTimestamp = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw blocks based on the blocks object
+            for (let key in blocks) {
+                const block = blocks[key];
+                ctx.fillStyle = block.color;
+                ctx.fillRect(block.x, block.y, 50, 50);
+            }
+            updateFPS();
+            requestAnimationFrame(draw);
+        }
+
+        function updateFPS() {
+            const now = performance.now();
+            const delta = now - lastTimestamp;
+            fps = Math.round(1000 / delta);
+            lastTimestamp = now;
+            document.getElementById('fpsCounter').innerText = `FPS: ${fps}`;
+            document.getElementById('positionDisplay').innerText = `Position: (${position.x}, ${position.y}, ${position.z})`;
+        }
+
+        function placeBlock(x, y) {
+            const key = `${x},${y}`;
+            blocks[key] = { x: x, y: y, color: 'brown' };
+        }
+
+        function removeBlock(x, y) {
+            const key = `${x},${y}`;
+            delete blocks[key];
+        }
+
+        window.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'w': position.z += 1; break;
+                case 's': position.z -= 1; break;
+                case 'a': position.x -= 1; break;
+                case 'd': position.x += 1; break;
+            }
+        });
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) / 50);
+            const y = Math.floor((event.clientY - rect.top) / 50);
+            if (event.ctrlKey) {
+                removeBlock(x, y);
+            } else {
+                placeBlock(x, y);
+            }
+        });
+
+        draw();
+    </script>
+</body>
+</html>
